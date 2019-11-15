@@ -6,9 +6,9 @@
 
 (
 ~spectralPeaks = ();
-~datapath = ~datapath ?? { "../data".resolveRelative };
+~leuchtstoffraum_datapath = ~leuchtstoffraum_datapath ?? { "../data".resolveRelative };
 
-(~datapath +/+ "peaks/*").resolveRelative.pathMatch.do { |path|
+(~leuchtstoffraum_datapath +/+ "peaks/*").resolveRelative.pathMatch.do { |path|
 	var x = SpectralPeaks.read(path);
 	"--- SpectralPeaks % ---".format(x.name).postln;
 	~spectralPeaks[x.name] = x;

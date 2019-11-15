@@ -1,7 +1,9 @@
 /*
 
 this fie can be used to initialise the data
-use the variable ~datapath to point to where your data folder.
+use the variable ~leuchtstoffraum_datapath to point to where your data folder.
+
+~leuchtstoffraum_datapath = "path/to/folder"
 
 It should look like this:
 

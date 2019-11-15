@@ -31,13 +31,15 @@ for now, we mainly use the lower 5 bands
 var paths;
 
 // you can override this path by setting ~datapath before running this
-~datapath = ~datapath ?? { "../data".resolveRelative };
+~leuchtstoffraum_datapath = ~leuchtstoffraum_datapath ?? { "../data".resolveRelative };
 
 // read modeled full molecule spectra, plus measured full spectrum
 ~spectra = IdentityDictionary.new;
 
-paths = (~datapath +/+ "/fits/*.fits").pathMatch;
-if(paths.isEmpty) { Error("No files found!").throw };
+paths = (~leuchtstoffraum_datapath +/+ "/fits/*.fits").pathMatch;
+if(paths.isEmpty) {
+	Error("Trying to read FITS: No /fits/ files found in path: %".format(~datapath)).throw
+};
 ~readData = { |path|
 	var spectrum = WideSpectrum.read(path);
 	spectrum.readOrder; // we keep the order in files
