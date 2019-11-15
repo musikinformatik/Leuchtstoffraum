@@ -1,0 +1,9 @@
+(
+	\name: 			"Leuchtstoffraum",
+	\path: 			"Leuchtstoffraum",
+	\summary:		"Materials for a piece with the same name",
+	\author: 		"Julian Rohrhuber, Volker Ossenkopf-Okada",
+	\since: 		"2019",
+	\version:		"0.1",
+	\status:		"experimental"
+)
