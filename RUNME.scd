@@ -15,7 +15,7 @@ path/to/folder/peaks/
 
 path/to/folder/fits/
 
-// ordered spectral data
+// ordered spectral data (optional)
 
 path/to/folder/fits_ordered
 
