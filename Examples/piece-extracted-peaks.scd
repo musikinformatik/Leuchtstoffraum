@@ -9,6 +9,8 @@ here, we extract naively many peaks from the full spectrum.
 - This could be done more accurately in the future
 - also, one could use the spectralPeaks to derive amplitudes, and frequency differences to the actual peak in the measured data
 
+The ~findPeaks implementation below is really not very good for noisy data (i.e. the actual measuremets e.g. in ~fullspectrumRaw)
+
 */
 
 
@@ -37,60 +39,61 @@ here, we extract naively many peaks from the full spectrum.
 //// some variants. run one of them and then rerun the examples
 
 ~peakData = ~findPeaks.(~fullspectrum.amplitudes)
+~peakData = ~findPeaks.(~fullspectrumRaw.amplitudes)
+~peakData = ~findPeaks.(~fullspectrumRawSmooth.amplitudes)
+~peakData = ~findPeaks.(~fullspectrumSmooth.amplitudes)
 ~peakData = ~findPeaks.(~spectra['hifi-bands1-5_E,CO'].amplitudes)
 ~peakData = ~findPeaks.(~band15.choose.postln.amplitudes);
 
 
 (
-Ndef(\x, {
+Ndef(\y, {
 	var data = ~peakData.keep(128 * 8).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
-	var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 400);
-	Klang.ar(`[freqs, amps, {2pi.rand}!data.size], 1) * 0.03 * 0.1
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400);
+	Klang.ar(`[freqs, amps, {2pi.rand}!data.size], 1) ! 2 * 0.03 * 0.1
 }).play
 )
 
 
 (
-Ndef(\x, {
+Ndef(\y, {
 	var data = ~peakData.keep(128 * 8).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
-	var exc = BPF.ar(Dust.ar(3 ! 8), MouseX.kr(20, 10000, 1), 0.2) * 2;
-	var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 400, 3100);
+	var exc = BPF.ar(Dust.ar(3 ! 2), MouseX.kr(20, 10000, 1), 0.2) * 2;
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400, 3100);
 	Klank.ar(`[freqs, amps, 3], exc, 1) * 0.03 * 0.1
 }).play
 )
 
 
-
-
 (
-Ndef(\x, {
+Ndef(\y, {
 	var data = ~peakData.keep(128 * 16).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
-	var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 87, 10000);
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 87, 10000);
 	//var exc =  Dust.ar(17, 0.1 * LFNoise1.kr(0.3).max(0)) + WhiteNoise.ar(0.001 ! 2);
 	var exc =  WhiteNoise.ar(0.001 ! 2) * LFPulse.kr(0.2, 0, 0.1);
 	var sig;
 	"min freq: % max freq: %".format(freqs.minItem, freqs.maxItem).postln;
 
-	sig = Klank.ar(`[freqs, amps, 30], exc, 1);
+	sig = Klank.ar(`[freqs, amps, 20], exc, 1);
 	LeakDC.ar(sig) * 0.2 * 0.2
-}).playN([0, 4])
+}).play;
 )
 
 
 
 
 (
-Ndef(\x, {
+Ndef(\y, {
 	var data = ~peakData.keep(128 * 16).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
-	var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 87, 9000);
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 87, 9000);
 	//var exc =  Dust.ar(17, 0.1 * LFNoise1.kr(0.3).max(0)) + WhiteNoise.ar(0.001 ! 2);
 	var exc =  WhiteNoise.ar(0.001 ! 2) * LFPulse.kr(0.2, 0, 0.1) + Dust.ar(0.2 ! 2, 0.05);
 	var sig;
@@ -98,18 +101,18 @@ Ndef(\x, {
 
 	sig = Klank.ar(`[freqs, amps, 30], exc, 1);
 	LeakDC.ar(sig) * 0.2 * 0.2
-}).playN([0, 4])
+}).play;
 )
 
 (
-Ndef(\x, {
+Ndef(\y, {
 	var trig, exc, sig;
 	var density = 14;
 	var data = ~peakData.keep(128 * 8).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
 	//var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 40, 11000);
-	var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 3000);
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 3000);
 	//var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 300);
 
 	//trig = Dust.ar(density ! 2, 0.01 * LFNoise1.kr(0.3, 0.2).max(0));

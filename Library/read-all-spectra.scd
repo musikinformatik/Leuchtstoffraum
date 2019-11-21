@@ -51,7 +51,11 @@ paths.do { |path| ~readData.(path) };
 
 
 ~allNames = ~spectra.keys.as(Array).sort;
-~fullspectrum = ~spectra['hifi-bands1-5_allmols']; // the  spectrum measured by Herschel
+~fullspectrum = ~spectra['hifi-bands1-5_allmols']; // the fits spectrum of all molecules
+~fullspectrumRaw = ~spectra['hifi-bands1-5_ORION_KL(H5)_resampled']; // the  spectrum measured by Herschel
+~fullspectrumRawSmooth = ~spectra['hifi-bands1-5_5_ORION_KL(H5)_smooth'];
+~fullspectrumSmooth = ~spectra['hifi-bands1-5_5_allmols_smooth'];
+
 ~band15 = ~spectra.select { |x| x.name.asString.find("bands1-5").notNil }; // lower 5 bands
 ~band6a = ~spectra.select { |x| x.name.asString.find("band6a").notNil }; // middle
 ~band67 = ~spectra.select { |x| x.name.asString.find("bands6b-7").notNil }; // high two bands
