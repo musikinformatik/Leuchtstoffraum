@@ -52,6 +52,9 @@ Ndef(\y, {
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
 	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400);
+
+	amps = amps * ~balanceAmp.(freqs);
+
 	Klang.ar(`[freqs, amps, {2pi.rand}!data.size], 1) ! 2 * 0.03 * 0.1
 }).play
 )
@@ -64,6 +67,9 @@ Ndef(\y, {
 	var amps = data[1].normalize(0.2, 1);
 	var exc = BPF.ar(Dust.ar(3 ! 2), MouseX.kr(20, 10000, 1), 0.2) * 2;
 	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400, 3100);
+
+	amps = amps * ~balanceAmp.(freqs);
+
 	Klank.ar(`[freqs, amps, 3], exc, 1) * 0.03 * 0.1
 }).play
 )
@@ -79,6 +85,8 @@ Ndef(\y, {
 	var exc =  WhiteNoise.ar(0.001 ! 2) * LFPulse.kr(0.2, 0, 0.1);
 	var sig;
 	"min freq: % max freq: %".format(freqs.minItem, freqs.maxItem).postln;
+
+	amps = amps * ~balanceAmp.(freqs);
 
 	sig = Klank.ar(`[freqs, amps, 20], exc, 1);
 	LeakDC.ar(sig) * 0.2 * 0.2
@@ -99,6 +107,8 @@ Ndef(\y, {
 	var sig;
 	"min freq: % max freq: %".format(freqs.minItem, freqs.maxItem).postln;
 
+	amps = amps * ~balanceAmp.(freqs);
+
 	sig = Klank.ar(`[freqs, amps, 30], exc, 1);
 	LeakDC.ar(sig) * 0.2 * 0.2
 }).play;
@@ -113,7 +123,10 @@ Ndef(\y, {
 	var amps = data[1].normalize(0.2, 1);
 	//var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 40, 11000);
 	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 3000);
+	// var freqs = ~mapFreqs.(~fullspectrumSmooth.frequencyAt(indices), 3000);
 	//var freqs = ~mapFreqs.(~fullspectrum.frequencyAt(indices), 300);
+
+	amps = amps * ~balanceAmp.(freqs);
 
 	//trig = Dust.ar(density ! 2, 0.01 * LFNoise1.kr(0.3, 0.2).max(0));
 	trig = Impulse.ar(8, [0, 0.5], 0.1 * LFNoise1.kr(0.9 ! 2, 0.1).max(0));
