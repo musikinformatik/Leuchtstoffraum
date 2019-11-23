@@ -90,6 +90,8 @@ Ndef(\y, {
 	exc = Decay2.ar(Dust.ar(2), 0.001, 0.01, WhiteNoise.ar(0.3, 1));
 	exc = BPF.ar(exc, MouseX.kr(40, 12000, 1), 0.4);
 
+	//exc =  WhiteNoise.ar(0.01) * LFNoise0.kr(5).max(0);
+
 	// distribute random spectral parts in different spatial positions
 	channels = scrambled.collect { |data, i|
 		var indices, amps, freqs, sig, dts;
@@ -97,7 +99,7 @@ Ndef(\y, {
 		indices = data[0];
 		amps = data[1].normalize(0.2, 1);
 
-		freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 200, 3100);
+		freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 200, 8100);
 
 		// delaytimes are large for quiet partials, and also for low freqeuncies
 		dts = data[1].normalize(3, 0.5) *  (1000/freqs);
@@ -114,6 +116,8 @@ Ndef(\y, {
 )
 
 
+
+// white noise bursts
 (
 Ndef(\y, {
 	var data = ~peakData.keep(128 * 16).flop;
