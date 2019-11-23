@@ -51,7 +51,7 @@ Ndef(\y, {
 	var data = ~peakData.keep(128 * 8).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
-	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400);
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400, 12000);
 
 	amps = amps * ~balanceAmp.(freqs);
 
@@ -65,12 +65,51 @@ Ndef(\y, {
 	var data = ~peakData.keep(128 * 8).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
-	var exc = BPF.ar(Dust.ar(3 ! 2), MouseX.kr(20, 10000, 1), 0.2) * 2;
-	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400, 3100);
+
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 200, 3100);
+	var exc = Decay2.ar(Dust.ar(2), 0.001, 0.01, WhiteNoise.ar(0.3, 1));
+
+	exc = Pan2.ar(exc, MouseX.kr(-1, 1)); // pan the input noise bursts
+	exc = BPF.ar(exc, MouseX.kr(freqs.minItem, freqs.maxItem, 1), 0.4); // filter them
 
 	amps = amps * ~balanceAmp.(freqs);
 
 	Klank.ar(`[freqs, amps, 3], exc, 1) * 0.03 * 0.1
+}).play
+)
+
+
+// a more differentiated space
+(
+Ndef(\y, {
+	var peaks, scrambled, exc, clumps, channels;
+	clumps = 4;
+	peaks = ~peakData.keep(128 * 8);
+	scrambled = peaks.scramble.flop.clump(peaks.size div: clumps);
+
+	exc = Decay2.ar(Dust.ar(2), 0.001, 0.01, WhiteNoise.ar(0.3, 1));
+	exc = BPF.ar(exc, MouseX.kr(40, 12000, 1), 0.4);
+
+	// distribute random spectral parts in different spatial positions
+	channels = scrambled.collect { |data, i|
+		var indices, amps, freqs, sig, dts;
+
+		indices = data[0];
+		amps = data[1].normalize(0.2, 1);
+
+		freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 200, 3100);
+
+		// delaytimes are large for quiet partials, and also for low freqeuncies
+		dts = data[1].normalize(3, 0.5) *  (1000/freqs);
+
+		amps = amps * ~balanceAmp.(freqs);
+
+		sig = Klank.ar(`[freqs, amps, dts], exc, 1);
+		Pan2.ar(sig, i / clumps)
+	};
+
+	channels.sum * 0.01
+
 }).play
 )
 
