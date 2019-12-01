@@ -20,7 +20,7 @@ we look around the places where we expect peaks
 (
 var clusters, emfreqs, numPartials = 32, numFreqsPerPartial = 128;
 var minFreq = 370;
-var maxFreq = 8000;
+var maxFreq = nil;
 
 clusters = ~emfreqs.keep(numPartials).collect { |freq|
 	~fullspectrumRawSmooth.amplitudesAroundFrequency(freq, numFreqsPerPartial)
