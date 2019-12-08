@@ -51,7 +51,7 @@ Ndef(\y, {
 	var data = ~peakData.keep(128 * 8).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
-	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400, 12000);
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400, 9900);
 
 	amps = amps * ~balanceAmp.(freqs);
 
@@ -62,11 +62,13 @@ Ndef(\y, {
 
 (
 Ndef(\y, {
+	var minFreq = 200;
+	var maxFreq = 9000;
 	var data = ~peakData.keep(128 * 8).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
 
-	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 200, 3100);
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), minFreq, maxFreq);
 	var exc = Decay2.ar(Dust.ar(2), 0.001, 0.01, WhiteNoise.ar(0.3, 1));
 
 	exc = Pan2.ar(exc, MouseX.kr(-1, 1)); // pan the input noise bursts
