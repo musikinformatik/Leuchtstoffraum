@@ -14,7 +14,7 @@ see below WideSpectrumHeader
 
 WideSpectrum {
 
-	var <amplitudes, <>order;
+	var <>amplitudes, <>order;
 	var <header, <name, <path;
 	var <>frequencyOffset, <>frequencyStep, <>frequencyIndexOffset;
 
