@@ -279,7 +279,6 @@ SynthDef(\peakharpC, { |out, gate = 1, amp=0.1, damp=0, sin = 0, pan = 0, sustai
 	var env, exc, sig, sig2, ffreq;
 	env = Decay2.ar(trig, 0.002, 0.2);
 	exc = PinkNoise.ar(env); // + trig;
-	freq = freq.lag(Rand(0.07, 0.1));
 	// CombL sounds better than CombC, which has too much head
 	sig = CombC.ar(exc, 0.5, 1/freq, sustain) * amp;
 	sig = LeakDC.ar(sig);
@@ -298,12 +297,12 @@ SynthDef(\peakharpC, { |out, gate = 1, amp=0.1, damp=0, sin = 0, pan = 0, sustai
 )
 
 
-(instrument: \peakharpC, amp: amps, freq: freqs, sustain: 3).play;
+(instrument: \peakharpC, freq: `[200, 892, 882], sustain: 3).play;
 
 
 (
 var peaks = ~spectralPeaks.choose.postln;
-var freqs = ~mapFreqs.(peaks.peakFreqs[peaks.temperatureOrder], 60.midicps);
+var freqs = ~mapFreqs.(peaks.peakFreqs[peaks.temperatureOrder], 48.midicps);
 var amps = peaks.amplitudes.normalize;
 
 amps = amps.normalize(0.2, 1);
@@ -339,6 +338,80 @@ Pdef(\x, Ppar(p ! 8)).play;
 )
 
 
+// check freeing
+
+(
+SynthDef(\peakharp_128, { |out, gate = 1, amp=0.1, damp=0, sin = 0, pan = 0, sustain = 1, numPartials = 256|
+
+	var freq = \freq.ir(440); // don't rearticulate on retrigger
+	var amps = \amps.ir(0 ! 256);
+	var ratios = \ratios.ir(1 ! 256);
+	var ktrig = \trig.tr(0);
+	var trig = T2A.ar(ktrig);
+	var env, exc, sig, sig2, ffreq, freqs;
+	env = Decay2.ar(trig, 0.002, 0.02);
+	exc = PinkNoise.ar(env); // + trig;
+
+	freqs = freq * ratios;
+	amps = amps.collect { |x, i| (i < numPartials) * x * AmpCompA.ir(freqs[i]) };
+
+	sig = Klank.ar(`[freqs, amps, 1], exc, decayscale: sustain);
+	sig = LeakDC.ar(sig);
+
+	damp = K2A.ar(damp).lagud(Rand(0.07, 0.1), Rand(0.07, 0.1));
+	ffreq = damp.linexp(0, 1, 2e4, freq * 2.3);
+	sig = HPF.ar(LPF.ar(sig, ffreq), 20);
 
 
+
+	DetectSilence.ar(sig.abs + (gate * 10), doneAction: Done.freeSelf);
+	//sig = sig * EnvGen.kr(Env.asr(0, 1, 0.1), gate, doneAction: Done.freeSelf);
+	sig = Pan2.ar(sig, pan, amp);
+
+	Out.ar(out, sig)
+}).add;
+)
+
+
+(
+var peaks = ~spectralPeaks.choose.postln;
+var freqs = ~mapFreqs.(peaks.peakFreqs[peaks.temperatureOrder], 70.midicps);
+var amps = peaks.amplitudes.normalize;
+var ratios = freqs / freqs[0];
+var ampOrder = amps.order;
+
+amps = amps.normalize(0.2, 1);
+
+p = Plazy {
+
+	var prevFreq;
+	var r = { |e|
+		e.use {
+			var freq = ~freq.value;
+			var rearticulate = (prevFreq != freq);
+			//if(rearticulate) { "============== rearticulated % -> %".format(prevFreq, freq).postln };
+			prevFreq = freq;
+			rearticulate
+		}
+	};
+
+	PmonoVoicer(
+		\peakharp_256,
+		\ratios, [ratios[ampOrder.keep(128)]],
+		\amps, [amps[ampOrder.keep(128)]],
+		\numPartials, freqs.size,
+		\freq, Pindex(freqs, Pbrown(0, freqs.size, 0.2, inf)),
+		\dur, Pshuf([1, 2, 1, 3, 1, 2, 8, 16, Rest(32), Rest(3), Rest(4)], inf) * 0.15,
+		\legato, 1.2,
+		\trig, 1,
+		\damp, Prand([0, 0, 0, 0, 1], inf),
+		\sin, Prand([0, 0, 0, 0, 0.5, 0.1], inf),
+		\pan, Pstutter(inf, Pfunc { 1.0.rand2 }),
+		\amp, 0.1,
+		\rearticulate, Pfunc(r)
+	)
+};
+
+Pdef(\x, Ppar(p ! 8)).play;
+)
 
