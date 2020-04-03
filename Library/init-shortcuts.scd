@@ -30,29 +30,6 @@
 ~spect3 = ~shortnames.collect { |x| ~spectra[('hifi-bands6b-7_' ++ x).asSymbol ] };
 
 
+"== shortcuts ==".postln;
+~peaks.keys.as(Array).sort.join(" ").postln;
 
-/*
-// this should become possible
-
-Pdef(\lsr_test,
-	Pbind(*[
-		\type: \lsr_1,
-		\name: Pseq([\CO, \HCO, \HCN], inf),
-		\partial: Pwhite(0, 70, inf), // should wrap
-		\freq: 220,
-		\maxFreq, 12000,
-		\sustain, 1
-	])
-);
-
-Pdef(\lsr_test2,
-	Pbind(*[
-		\type: \lsr_1,
-		\name: Pseq([\CO, \HCO, \HCN], inf),
-		\from_partial: Pwhite(0, 70, inf), // should wrap
-		\numPartials: 64,
-		\freq: 220,
-		\sustain, 1
-	])
-);
-*/

@@ -22,8 +22,12 @@ freqs: { exprand(300, 1e4) } ! 345,
 // if to is given, the indices are linearly mapped to the boundaries of the spectrum [from..to]
 // if only from is given, to is derived from the actual ratio in the spectrum
 
-~indices2Freqs = { |spectrum, indices, from = 440, to|
+~defaultFreq = 50;
 
+~hydrogenline = 1420405751.7667; //  21-cm line, from H ground state
+
+~indices2Freqs = { |spectrum, indices, from, to|
+	from = from ? ~defaultFreq;
 	if(to.isNil) {
 		to = from * spectrum.frequencyMaximum / spectrum.frequencyMinimum;
 	};
@@ -40,7 +44,8 @@ freqs: { exprand(300, 1e4) } ! 345,
 };
 
 // electromagnetic frequencies are mapped with respect to the fullspectrum
-~mapFreqs = { |emFreqs, from = 440, to|
+~mapFreqs = { |emFreqs, from, to|
+	from = from ? ~defaultFreq;
 	if(to.isNil) {
 		emFreqs * (~fullspectrum.frequencyMinimum / from).reciprocal
 	} {
@@ -53,6 +58,19 @@ freqs: { exprand(300, 1e4) } ! 345,
 		)
 	}
 };
+
+~mapFreqsProportionally = { |emFreqs, from, ratio = 1|
+	from = from ? ~defaultFreq;
+	emFreqs.linlin(
+		~fullspectrum.frequencyMinimum,
+		~fullspectrum.frequencyMaximum,
+		from,
+		~fullspectrum.frequencyMaximum / ~fullspectrum.frequencyMinimum * ratio * from,
+		\noclip
+	)
+
+};
+
 
 
 ~mapFreqsBelow = { |emFreqs, minFreq|
@@ -100,7 +118,24 @@ freqs: { exprand(300, 1e4) } ! 345,
 
 };
 
-
+~findPeaks = { |array, thresh = 0.01| // returns array of pairs [index, value]
+	var map = List[];
+	var prev = 0;
+	var diff = array.differentiate;
+	diff.do { |x, i|
+		var found =
+		prev > 0 and: { x <= 0 } // difference crosses zero
+		and: { array[i] > thresh } // only include high enough values
+		//and: { diff.clipAt(i - 30) > 0 }
+		//and: { diff.clipAt(i + 30) < 0 }
+		;
+		if(found) {
+			map.add([i, array[i]])
+		};
+		prev = x;
+	};
+	map.sort { |a, b| a[1] > b[1] } // sort by value
+};
 
 
 
@@ -139,11 +174,12 @@ freqs: { exprand(300, 1e4) } ! 345,
 (
 ~playPeakBand = { |spectrum, minFreq, maxFreq, from = 0, to, numPartials = 512, event|
 	var indices, signal, balancedIndices;
-	var freqs, amps, dts;
+	var emfreqs, freqs, amps, dts;
 
 	// some defaults
 	numPartials = numPartials.asInteger;
 	to = to ?? { spectrum.signal.lastIndex };
+	//emfreqs = spectrum.frequencyAt((from..to));
 	minFreq = minFreq ?? { spectrum.frequencyAt(from) * ~globalFrequencyScale * 440 };
 	maxFreq = maxFreq ?? { spectrum.frequencyAt(to) * ~globalFrequencyScale * 440 };
 	event = event ?? { (instrument: \spectrum_512, amp: 0.1, sustain: 1) };

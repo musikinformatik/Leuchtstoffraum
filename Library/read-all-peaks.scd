@@ -31,3 +31,23 @@
 ~gauss = { |x, a = 1.0, b = 0.0, c = 1.0| a * (exp(squared(x - b) / (-2.0 * squared(c)))) };
 ~spectralPeaks
 );
+
+
+(
+~postPeaks = {
+	var pad = { |str, n|
+		str.asString.extend(n, $ );
+	};
+	~spectralPeaks.keys.asArray.sort.do { |x|
+		var peaks = ~spectralPeaks.at(x);
+		var freqs = peaks.peakFreqs;
+		"% n:%  (%..%) THz".format(
+			pad.(x, 16),
+			pad.(freqs.size, 4),
+			(freqs.minItem * 1e-12).round(0.001),
+			(freqs.maxItem * 1e-12).round(0.001)
+		).postln;
+
+	}
+}
+);
