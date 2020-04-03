@@ -1,4 +1,64 @@
-SpectralPeaks {
+
+BasicSpectralPeaks {
+
+	var <>peakFreqs;    // Energiedifferenz in MHz, d.h. Delta E/Plancksches Wirkungsquantum
+	var <>amplitudes;
+	var <>baseFreq;
+
+	var <path, <name;
+
+	classvar <>defaultBaseFreq = 12162979000.0; // just using the minimal baseFreq
+
+	*read { |path|
+		^super.new.read(path).init
+	}
+
+	init {}
+
+	frequencyMaximum {
+		^peakFreqs.maxItem
+	}
+
+	frequencyMinimum {
+		^peakFreqs.minItem
+	}
+
+	peakRatios {
+		if(baseFreq.isNil) {
+			"--- %: calculating ratios without known base frequency, "
+			"using defaultBaseFreq".format(this).postln;
+		};
+		^peakFreqs * (baseFreq ? defaultBaseFreq).reciprocal
+	}
+
+	read { |argPath|
+
+		if(File.exists(argPath).not) {
+			Error("no file named '%'\n".format(argPath)).throw
+		};
+
+		File.use(argPath, "r", { |file|
+			this.parseData(file.readAllString);
+			path = argPath;
+			name = argPath.basename.splitext.first.asSymbol;
+		})
+
+	}
+
+	parseData { |string|
+		this.subclassResponsibility(thisMethod) // for a future parser, add it here.
+	}
+
+	printOn { |stream|
+		stream << this.class.name;
+		stream << "(" <<< name << ")"
+	}
+
+
+}
+
+
+SpectralPeaks : BasicSpectralPeaks {
 
 	/*
 	Die Tabelle ist sortiert nach der Länge der roten Pfeile [beobachtete Übergänge zwischen Energielevels]
@@ -8,17 +68,15 @@ SpectralPeaks {
 	die absolute Energie in Temperatureinheiten, d.h. E/Boltzmannkonstante.
 	*/
 
-	var <>peakFreqs;    // Energiedifferenz in MHz, d.h. Delta E/Plancksches Wirkungsquantum
+
 	var <>transitionFreqs;
 	var <>temperatures; // absolute Energie in Temperatureinheiten, d.h. Kelvin = E/Boltzmann-Konstante
-	var <>amplitudes;
 
 
-	var <>baseFreq;
-	var <path, <name;
+
 	var <temperatureOrder;
 
-	classvar <>defaultBaseFreq = 12162979000.0; // just using the minimal baseFreq
+
 
 	*read { |path|
 		^super.new.read(path).init
@@ -40,31 +98,11 @@ SpectralPeaks {
 		^min(peakFreqs.minItem, transitionFreqs.minItem)
 	}
 
-	peakRatios {
-		if(baseFreq.isNil) {
-			"--- %: calculating ratios without known base frequency, "
-			"using defaultBaseFreq".format(this).postln;
-		};
-		^peakFreqs * (baseFreq ? defaultBaseFreq).reciprocal
-	}
-
 	transitionRatios {
 		^transitionFreqs * baseFreq.reciprocal
 	}
 
-	read { |argPath|
 
-		if(File.exists(argPath).not) {
-			Error("no file named '%'\n".format(argPath)).throw
-		};
-
-		File.use(argPath, "r", { |file|
-			this.parseData(file.readAllString);
-			path = argPath;
-			name = argPath.basename.splitext.first.asSymbol;
-		})
-
-	}
 
 	parseData { |string|
 		var lines = string.split(Char.nl);
@@ -112,12 +150,6 @@ SpectralPeaks {
 			func.(x);
 		};
 	}
-
-	printOn { |stream|
-		stream << this.class.name;
-		stream << "(" <<< name << ")"
-	}
-
 
 
 }
