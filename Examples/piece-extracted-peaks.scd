@@ -14,27 +14,6 @@ The ~findPeaks implementation below is really not very good for noisy data (i.e.
 */
 
 
-(
-~findPeaks = { |array|
-	var map = List[];
-	var prev = 0;
-	var diff = array.differentiate;
-	diff.do { |x, i|
-		var found =
-		prev > 0 and: { x <= 0 }
-		and: { array[i] > 0.01 }
-		//and: { diff.clipAt(i - 30) > 0 }
-		//and: { diff.clipAt(i + 30) < 0 }
-		;
-		prev = x;
-		if(found) {
-			map.add([i, array[i]])
-		};
-	};
-	map.sort { |a, b| a[1] > b[1] }
-};
-)
-
 
 //// some variants. run one of them and then rerun the examples
 
@@ -43,21 +22,58 @@ The ~findPeaks implementation below is really not very good for noisy data (i.e.
 ~peakData = ~findPeaks.(~fullspectrumRawSmooth.amplitudes)
 ~peakData = ~findPeaks.(~fullspectrumSmooth.amplitudes)
 ~peakData = ~findPeaks.(~spectra['hifi-bands1-5_E,CO'].amplitudes)
-~peakData = ~findPeaks.(~band15.choose.postln.amplitudes);
+~peakData = ~findPeaks.(~spectra['hifi-bands1-5_SiO,v=0-6'].amplitudes)
+
+
+
+~allFoundPeaks = ~band15.collect { |x| ~findPeaks.(x.amplitudes) }; // takes a while ...
+
+
 
 
 (
+~peakData = ~allFoundPeaks[~allFoundPeaks.keys.choose.postln];
+
 Ndef(\y, {
-	var data = ~peakData.keep(128 * 8).flop;
+	var data = ~peakData.keep(128 * 16).flop;
 	var indices = data[0];
 	var amps = data[1].normalize(0.2, 1);
-	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 400, 9900);
+	var freqs = ~mapFreqs.(~fullspectrumRawSmooth.frequencyAt(indices), 50, 10000);
 
 	amps = amps * ~balanceAmp.(freqs);
 
 	Klang.ar(`[freqs, amps, {2pi.rand}!data.size], 1) ! 2 * 0.03 * 0.1
 }).play
 )
+
+
+
+
+(
+~peakData = ~allFoundPeaks[~allFoundPeaks.keys.choose.postln];
+
+Ndef(\y, {
+	var data = ~peakData.keep(128 * 8).flop;
+	var indices = data[0];
+	var amps = data[1].normalize(0.2, 1);
+	var freqs = ~mapFreqsProportionally.(~fullspectrumRawSmooth.frequencyAt(indices), 50, 16);
+	var trig, rate;
+	rate = 3;
+	amps = amps * ~balanceAmp.(freqs);
+	trig = Impulse.ar(rate);
+	amps = amps.collect { |x|
+		var delay = rrand(0.4, 0.9);
+		var opening = 0.3;
+		var trig = TDelay.ar(trig, delay / rate);
+		var gate = Trig1.ar(trig, (1 - delay) / rate * opening);
+		gate.lag(0.001) * x
+	};
+
+	Splay.ar(SinOsc.ar(freqs) *  amps) * 0.3
+}).play
+)
+
+
 
 
 (
@@ -76,9 +92,11 @@ Ndef(\y, {
 
 	amps = amps * ~balanceAmp.(freqs);
 
-	Klank.ar(`[freqs, amps, 3], exc, 1) * 0.03 * 0.1
+	Klank.ar(`[freqs, amps, 3], exc, 1) * 0.03 * 0.5
 }).play
 )
+
+
 
 
 // a more differentiated space
@@ -112,7 +130,7 @@ Ndef(\y, {
 		Pan2.ar(sig, i / clumps)
 	};
 
-	channels.sum * 0.01
+	channels.sum * 0.1
 
 }).play
 )
