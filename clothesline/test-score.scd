@@ -5,7 +5,7 @@
 //-- INIT
 
 SynthDef(\sawwas, { Out.ar(0, XLine.kr(0.1, 00001, 0.2, doneAction: 2) * Saw.ar(\freq.kr)) }).add;
-
+s.sync;
 
 //-- PLAY
 
