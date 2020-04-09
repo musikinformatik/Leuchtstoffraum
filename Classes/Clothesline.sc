@@ -5,6 +5,8 @@ Clothesline {
 	var <currentTime;
 	var <>verbose = true;
 	var <breakpoints;
+	var <>player;
+	var <>prefix="-score";
 
 	*new {
 		^super.new.init
@@ -15,7 +17,8 @@ Clothesline {
 		currentTime = 0;
 	}
 
-	loadScore { |path, prefix = "//--"|
+	loadScore { |path|
+		var delimiter = "//--";
 		var string, error, event;
 
 		string = File.readAllString(path);
@@ -30,16 +33,16 @@ Clothesline {
 			Error(errorString).throw
 		};
 
-		event = ();
+		event = (path: path);
 
-		string.findAll(prefix).do { |from|
+		string.findAll(delimiter).do { |from|
 			var part, to, eol, i, j, code;
 
 			eol = string.find("\n", offset: from);
-			to = string.find("//-- ", offset: from+1) ?? { string.size };
+			to = string.find(delimiter, offset: from+1) ?? { string.size };
 
 			if(eol.isNil) { error.("part '%', add a newline at least...".format(string[from..]), from) };
-			part = string[from + prefix.size..eol];
+			part = string[from + delimiter.size..eol];
 			i = part.detectIndex { |x| x.isAlpha };
 			if(i.isNil) { error.("no part name: '%'".format(part), from) };
 			part = part[i..];
@@ -56,7 +59,7 @@ Clothesline {
 		^event
 	}
 
-	addScore { |path, prefix="-score"|
+	addScore { |path|
 		var event = this.loadScore(path);
 		var name, prevEvent, hotSwap = false;
 		if(event.notNil) {
@@ -72,8 +75,8 @@ Clothesline {
 			if(prevEvent.notNil) {
 				hotSwap = this.eventIsRunning(prevEvent, currentTime);
 				if(hotSwap) { this.stopScore([name]) };
-				if(event[\startTime].isNil) { event[\startTime] = ~score[name][\startTime] };
-				if(event[\endTime].isNil) { event[\endTime] = ~score[name][\endTime] };
+				if(event[\startTime].isNil) { event[\startTime] = score[name][\startTime] };
+				if(event[\endTime].isNil) { event[\endTime] = score[name][\endTime] };
 			};
 			score[name] = event;
 			if(hotSwap) {
@@ -85,12 +88,16 @@ Clothesline {
 		}
 	}
 
-	addAllScores { |path, prefix = "-score"|
+	addAllScores { |path|
 		var paths;
 		path =  "%*%.scd".format(path, prefix);
 		paths = path.pathMatch;
 		if(paths.isEmpty) { "No files found in this path: \n'%'".format(path.cs).warn };
-		paths.do { |path| this.addScore(path, prefix) };
+		paths.do { |path| this.addScore(path) };
+	}
+
+	updateFromFiles {
+		score.do { |event| this.addScore(event[\path]) }
 	}
 
 
@@ -147,22 +154,25 @@ Clothesline {
 
 	// scheduling
 
-	play { |startTime = 0, endTime = inf, clock, timeStep = 0.5| // todo: do not allow several parallel ones.
-
-		^Task {
-			var time = startTime;
+	play { |startTime, endTime = inf, clock, timeStep = 0.1| // todo: do not allow several parallel ones.
+		player.stop;
+		this.updateFromFiles;
+		player = Task {
+			var time = startTime ? currentTime;
 			var next, dt;
 			while {
 				next = this.getNextBreakpoint(time);
-				[\next, next].postln;
 				next.notNil and: { time < endTime }
 			} {
-				dt = if(next - time < timeStep) { next - time } { timeStep };
+				dt = min(next - time, timeStep);
 				time = time + dt;
 				this.jumpTo(time);
 				dt.wait;
-			}
-		}.play(clock ? SystemClock)
+			};
+
+			this.jumpTo(inf); // for now
+		}.play(clock ? SystemClock);
+		^player
 
 	}
 
@@ -186,6 +196,10 @@ Clothesline {
 
 	}
 
+	schedAll { |triples|
+		triples.clump(3).do(this.sched(*_))
+	}
+
 	// navigation
 
 	jumpTo { |time|
@@ -195,7 +209,7 @@ Clothesline {
 	}
 
 	fastForwardTo { |time|
-		var relevantEvents, running, willEnd, willStartButNotEnd;
+		var relevantEvents, running, shouldEnd, shouldStart;
 		relevantEvents = score;
 		relevantEvents = relevantEvents.reject { |e| e[\startTime].isNil }; // not scheduled
 		relevantEvents = relevantEvents.reject { |e| e[\startTime] > time }; // haven't begun by the new time
@@ -203,18 +217,23 @@ Clothesline {
 
 
 		running = relevantEvents.select { |e| e[\startTime] < currentTime };
-		willEnd = running.select { |e| e[\endTime] < time };
-		willStartButNotEnd = relevantEvents.select { |e|
+		shouldEnd = running.select { |e| e[\endTime] < time };
+		shouldStart = relevantEvents.select { |e|
 			e[\startTime] > currentTime and: { e[\endTime] > time }
 		};
 
 		if(verbose) {
-			[\willEnd, willEnd.keys].postln;
-			[\willStartButNotEnd, willStartButNotEnd.keys].postln;
+
+			if(shouldEnd.keys.notEmpty) {
+				"stopping: %".format(shouldEnd.keys.asArray.sort).postln
+			};
+			if(shouldStart.keys.notEmpty) {
+				"starting: %".format(shouldStart.keys.asArray.sort).postln
+			};
 		};
 
-		willEnd.keysDo { |name| this.stopScore(name) };
-		willStartButNotEnd.keysDo { |name| this.playScore(name) };
+		shouldEnd.keysDo { |name| this.stopScore(name) };
+		shouldStart.keysDo { |name| this.playScore(name) };
 
 		currentTime = time;
 
@@ -222,7 +241,7 @@ Clothesline {
 
 
 	rewindTo { |time|
-		var relevantEvents, running, shouldEnd, willStartButNotEnd, shouldBeRestarted;
+		var relevantEvents, running, shouldEnd, shouldBeRestarted;
 		relevantEvents = score;
 		relevantEvents = relevantEvents.reject { |e| e[\startTime].isNil }; // not scheduled
 		relevantEvents = relevantEvents.reject { |e| e[\startTime] > currentTime }; // haven't begun
@@ -238,8 +257,12 @@ Clothesline {
 		};
 
 		if(verbose) {
-			[\rewindTo, \shouldBeRestarted, shouldBeRestarted.keys].postln;
-			[\rewindTo, \shouldEnd, shouldEnd.keys].postln;
+			if(shouldEnd.keys.notEmpty) {
+				"stopping: %".format(shouldEnd.keys.asArray.sort).postln
+			};
+			if(shouldBeRestarted.keys.notEmpty) {
+				"starting: %".format(shouldBeRestarted.keys.asArray.sort).postln
+			};
 		};
 
 		shouldBeRestarted.keysDo { |name| this.playScore(name) };

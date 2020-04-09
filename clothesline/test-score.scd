@@ -4,7 +4,7 @@
 
 //-- INIT
 
-SynthDef(\sawwas, { Out.ar(0, XLine.kr(0.1, 00001, 0.2, doneAction: 2) * Saw.ar(\freq.kr)) }).add;
+SynthDef(\sawwas, { Out.ar(0, XLine.kr(0.1, 00001, 0.1, doneAction: 2) * Saw.ar(\freq.kr) * 0.1) }).add;
 s.sync;
 
 //-- PLAY
@@ -12,8 +12,8 @@ s.sync;
 (
 Tdef(\xtest, {
 	loop {
-		(instrument: \sawwas, note: 8, octave: 4).play;
-		0.2.rand.wait;
+		(instrument: \sawwas, note: 8.rand, octave: 5).play;
+		0.1.wait;
 	}
 }).play
 );

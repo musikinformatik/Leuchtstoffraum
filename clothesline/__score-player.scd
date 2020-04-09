@@ -9,9 +9,24 @@ check INIT-FREE pairing. If there was no FREE, no new INIT?
 
 */
 
+c.verbose
 
+(
 c = Clothesline.new;
 c.addAllScores("".resolveRelative);
+
+
+c.schedAll([
+	\test, 1.0, 4,
+	\more, 2.5, 5.0,
+]);
+c.score.postcs;
+
+c.play;
+)
+
+c.breakpoints
+
 
 
 
