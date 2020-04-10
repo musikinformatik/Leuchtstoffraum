@@ -152,6 +152,8 @@ SynthDef(\peakharp, { |out, freq=440, amp=0.1, damp=0, pan = 0, sustain = 1|
 (instrument:\peakharp, freq: 700, sustain: 1).play;
 (instrument:\peakharp, freq: 700, sustain: 10).play;
 
+(instrument:\peakharp, freq: 200 * ((1..10) ** (1/2.3)), sustain: 3).play;
+
 
 (
 //var peaks = ~spectralPeaks['CH3OH-E'];
